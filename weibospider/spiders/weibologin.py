@@ -26,14 +26,14 @@ class WeibologinSpider:
                 split = re.split('\s+', line)
                 self.users[split[0]] = split[1]
             f.close()
-            print (self.users)
+            self.iteritems = self.users.iteritems()
+            print(self.users)
 
     def get_cookies(self):
         options = webdriver.ChromeOptions()
         options.binary_location = 'C:/Users/admin/AppData/Local/Google/Chrome SxS/Application/chrome.exe'
 
         # 获取一条账号信息
-        self.iteritems = self.users.iteritems()
         for i in self.iteritems:
             username = i[0]
             password = i[1]
@@ -65,16 +65,15 @@ class WeibologinSpider:
                 time.sleep(0.5)
                 driver.find_element_by_xpath('//input[@class="W_btn_a btn_34px"]').click()
 
-                print ('登录信息输入完毕')
+                print('登录信息输入完毕')
                 WebDriverWait(driver, 10). \
                     until(expected_conditions.title_contains(u'我的新浪'))
 
-                print ('登录完毕')
-                cookies = driver.get_cookies()
-                print ('cookie:' + str(cookies[0]))
+                print('登录完毕')
+                _cookies = driver.get_cookies()
+                print('cookie:' + str(_cookies[0]))
                 yield cookies[0]
             except TimeoutException as ei:
-                # driver.close()
                 print('用户名或密码错误 ' + i[0] + ':' + i[1])
                 ecstr = traceback.format_exc()
                 print(ecstr)
