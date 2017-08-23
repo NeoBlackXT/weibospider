@@ -48,9 +48,6 @@ class WeiboCrawl(CrawlSpider):
                 # 非utf-8字符，无法识别
                 _json = re.sub(r'\\x', r'\\\\x', _json)
                 _json = re.sub(r'(\\U\w{8})', r'\\\1', _json)
-                # _json = re.sub(r"\\\\n", r"\n", _json)
-                # _json = re.sub(r"\\\\r", r"\r", _json)
-                # _json = re.sub(r"\\\\t", r"\t", _json)
                 _json = re.sub(r"\\'", r"'", _json)
                 json_load = json.loads(_json)
                 return json_load
