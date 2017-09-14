@@ -12,7 +12,7 @@ from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.ui import WebDriverWait
 
 
-class WeibologinSpider(object):
+class seleniumlogin(object):
     def __init__(self):
 
         self.users = {}
@@ -101,6 +101,6 @@ class WeibologinSpider(object):
 
 
 if __name__ == '__main__':
-    cookies = WeibologinSpider().get_cookies()
+    cookies = seleniumlogin().get_cookies()
     for cookie in cookies:
         print(cookie)
