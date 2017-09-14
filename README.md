@@ -1,5 +1,5 @@
 # weibospider
-基于scripy框架的微博爬虫
+基于scrapy框架的微博爬虫
 
 ### Feature
 * 模拟登陆
