@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
 import scrapy
 from datetime import date
 from scrapy.linkextractors import LinkExtractor
-from scrapy.spiders import CrawlSpider, Rule
+from scrapy.spiders import CrawlSpider
 from weibospider.items import WeiboItem
 import json
 import re
@@ -13,12 +12,7 @@ class WeiboCrawl(CrawlSpider):
     allowed_domains = ['weibo.com', 'passport.weibo.com', 'data.weibo.com', 'photo.weibo.com', 't.cn']
     start_urls = ['http://weibo.com/login.php']
 
-    # rules = (
-    #     Rule(link_extractor=LinkExtractor(allow='.*'), callback='parse_item'),
-    # )
-
-    # r'/a/aj/transform/'
-
+    @staticmethod
     def parse_item(response):
         str0 = response.body.decode('utf-8')
         print(str0)
@@ -31,14 +25,12 @@ class WeiboCrawl(CrawlSpider):
         return item
 
     def parse_start_url(self, response):
-        _str = response.body.decode('utf-8')
+        # _str = response.body.decode('utf-8')
         # print (_str)
-
         _text = response.xpath('/html/script[@charset="utf-8"]/text()').extract()
 
         def jsonp_to_json(jsonp):
             jsonp = repr(jsonp)
-            # patten = re.compile(ur'{(?:.*[\u4E00-\u9FA5]*.*)*}')
             patten = re.compile(r'{(?u).*}')
             result = re.search(patten, jsonp)
             if result:
