@@ -1,16 +1,14 @@
-import random
-
-from lxml import etree
-import scrapy
-import time
-
 from scrapy import Request
 from scrapy.http import HtmlResponse
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider
 from weibospider.items import WeiboItem
 from weibospider.items import UserItem
-import urllib.parse
+import random
+from lxml import etree
+import scrapy
+import time
+from urllib import parse
 import json
 import re
 
@@ -21,23 +19,6 @@ class UnloginCrawl(CrawlSpider):
     category = 0
     page = 1
     end_page = 3
-
-    @staticmethod
-    def jsonp_to_json(jsonp):
-        patten = re.compile(r'{(?u).*}')
-        result = re.search(patten, jsonp)
-        if result:
-            _json = result.group()
-            _json = re.sub(r'\\\\"', r'\\"', _json)
-            _json = re.sub(r'\\\\/', r'/', _json)
-            # 非utf-8字符，无法识别
-            _json = re.sub(r'\\x', r'\\\\x', _json)
-            _json = re.sub(r'(\\U\w{8})', r'\\\1', _json)
-            _json = re.sub(r"\\'", r"'", _json)
-            json_load = json.loads(_json)
-            return json_load
-        else:
-            raise RuntimeError('No json found!')
 
     def start_requests(self):
         while self.page <= self.end_page:
@@ -61,10 +42,10 @@ class UnloginCrawl(CrawlSpider):
         # _html = re.sub(r'(\\U\w{8})', r'\\\1', _html)
         html = etree.HTML(_html)
 
-        # div_list_a = html.xpath('//div[@class="UG_list_a"]')
-        # yield from self.parse_div_list_a(div_list_a)
-        # div_list_b = html.xpath('//div[@class="UG_list_b"]')
-        # yield from self.parse_div_list_b(div_list_b)
+        div_list_a = html.xpath('//div[@class="UG_list_a"]')
+        yield from self.parse_div_list_a(div_list_a)
+        div_list_b = html.xpath('//div[@class="UG_list_b"]')
+        yield from self.parse_div_list_b(div_list_b)
         div_list_v2 = html.xpath('//div[@class="UG_list_v2 clearfix"]')
         yield from self.parse_div_list_v2(div_list_v2)
 
@@ -88,7 +69,7 @@ class UnloginCrawl(CrawlSpider):
             action_data = i.xpath('./div[@class="vid"]/@action-data')[0]
             video_src = action_data[action_data.index('video_src=') + 10:action_data.index('&cover_img=')]
             print(video_src)
-            weibo_item['video_url'] = urllib.parse.unquote(video_src)
+            weibo_item['video_url'] = parse.unquote(video_src)
             nums = i.xpath(
                 './div[@class="list_des"]/div[@class="subinfo_box clearfix subinfo_box_btm"]/span[@class="subinfo_rgt '
                 'S_txt2"]/em[2]/text()')[0]
@@ -175,3 +156,20 @@ class UnloginCrawl(CrawlSpider):
                                            time.localtime().tm_mday, time_tuple.tm_hour, time_tuple.tm_min, 0, -1,
                                            -1, -1))
         return time.mktime(time_tuple)
+
+    @staticmethod
+    def jsonp_to_json(jsonp):
+        patten = re.compile(r'{(?u).*}')
+        result = re.search(patten, jsonp)
+        if result:
+            _json = result.group()
+            _json = re.sub(r'\\\\"', r'\\"', _json)
+            _json = re.sub(r'\\\\/', r'/', _json)
+            # 非utf-8字符，无法识别
+            _json = re.sub(r'\\x', r'\\\\x', _json)
+            _json = re.sub(r'(\\U\w{8})', r'\\\1', _json)
+            _json = re.sub(r"\\'", r"'", _json)
+            json_load = json.loads(_json)
+            return json_load
+        else:
+            raise RuntimeError('No json found!')
