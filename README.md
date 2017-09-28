@@ -2,7 +2,7 @@
 基于scrapy框架的微博爬虫
 
 ### Feature
-* 模拟登陆
+* selenium模拟登陆
 * 获取首页推送微博
 
 ### Known Issue

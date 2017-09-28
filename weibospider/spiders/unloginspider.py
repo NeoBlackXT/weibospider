@@ -16,9 +16,12 @@ import re
 class UnloginCrawl(CrawlSpider):
     name = 'unlogincrawl'
     allowed_domains = ['weibo.com']
+    # 爬取分类
     category = 0
+    # 爬取起始页
     page = 1
-    end_page = 3
+    # 爬取终止页
+    end_page = 1
 
     def start_requests(self):
         while self.page <= self.end_page:
@@ -49,30 +52,35 @@ class UnloginCrawl(CrawlSpider):
         div_list_v2 = html.xpath('//div[@class="UG_list_v2 clearfix"]')
         yield from self.parse_div_list_v2(div_list_v2)
 
-    def parse_div_list_v2(self, div_list_v2):
+        for i in div_list_a:
+            user_home_url = 'http://weibo.com' + i.xpath('./div[@class="subinfo_box clearfix"]/a[2]/@href')[0]
+            yield Request(user_home_url, callback=self.parse_user, cookies={'SUB': 'SUB'})
+
+        for i in div_list_b:
+            user_home_url = 'http://weibo.com' + \
+                            i.xpath('./div[@class="list_des"]/div[@class="subinfo_box clearfix"]/a[2]/@href')[0]
+            yield Request(user_home_url, callback=self.parse_user, cookies={'SUB': 'SUB'})
         for i in div_list_v2:
+            user_home_url = 'http:' + i.xpath('./div[@class="list_des"]/div[@class="subinfo_box clearfix"]/a[2]/@href')[
+                0]
+            yield Request(user_home_url, callback=self.parse_user, cookies={'SUB': 'SUB'})
+
+    def parse_div_list_a(self, div_list_a):
+        for i in div_list_a:
             print('------------------')
             print(etree.tostring(i, encoding='utf-8', pretty_print=True).decode())
             weibo_item = WeiboItem()
             weibo_item['mid'] = i.xpath('./@mid')[0]
-            weibo_item['nickname'] = \
-                i.xpath('./div[@class="list_des"]/div[@class="subinfo_box clearfix"]/a[2]/span/text()')[0]
-            date_str = \
-                i.xpath(
-                    './div[@class="list_des"]/div[@class="subinfo_box clearfix"]/span[@class="subinfo S_txt2"]/text()')[
-                    0]
-            weibo_item['date'] = self.parse_datestr(date_str)
-            content_div = i.xpath('./div[@class="list_des"]/*[1]/*')[0]
-            weibo_item['content'] = self.parse_content_div(content_div)
-            weibo_item['source_url'] = i.xpath('./div[@class="vid"]/@href')[0]
-            weibo_item['image_urls'] = None
-            action_data = i.xpath('./div[@class="vid"]/@action-data')[0]
-            video_src = action_data[action_data.index('video_src=') + 10:action_data.index('&cover_img=')]
-            print(video_src)
-            weibo_item['video_url'] = parse.unquote(video_src)
+            weibo_item['nickname'] = i.xpath('./div[@class="subinfo_box clearfix"]/a[2]/span/text()')[0]
+            date_str = i.xpath('./div[@class="subinfo_box clearfix"]/span[@class="subinfo S_txt2"]/text()')[0]
+            weibo_item['date'] = self.process_datestr(date_str)
+            content_div = i.xpath('./*[1]/*')[0]
+            weibo_item['content'] = self.process_content(content_div)
+            weibo_item['source_url'] = i.xpath('./@href')[0]
+            weibo_item['image_urls'] = i.xpath('./div[@class="list_nod clearfix"]/div/img/@src')
+            weibo_item['video_url'] = None
             nums = i.xpath(
-                './div[@class="list_des"]/div[@class="subinfo_box clearfix subinfo_box_btm"]/span[@class="subinfo_rgt '
-                'S_txt2"]/em[2]/text()')[0]
+                './div[@class="subinfo_box clearfix"]/span[@class="subinfo_rgt S_txt2"]/em[2]/text()')
             weibo_item['forwarding_num'] = nums[-1]
             weibo_item['comment_num'] = nums[-2]
             weibo_item['praise_num'] = nums[-3]
@@ -92,9 +100,9 @@ class UnloginCrawl(CrawlSpider):
                 i.xpath(
                     './div[@class="list_des"]/div[@class="subinfo_box clearfix"]/span[@class="subinfo S_txt2"]/text()')[
                     0]
-            weibo_item['date'] = self.parse_datestr(date_str)
+            weibo_item['date'] = self.process_datestr(date_str)
             content_div = i.xpath('./div[@class="list_des"]/*[1]/*')[0]
-            weibo_item['content'] = self.parse_content_div(content_div)
+            weibo_item['content'] = self.process_content(content_div)
             weibo_item['source_url'] = i.xpath('./@href')[0]
             weibo_item['image_urls'] = i.xpath('./div[1]/img/@src')
             weibo_item['video_url'] = None
@@ -108,22 +116,29 @@ class UnloginCrawl(CrawlSpider):
             print('------------------')
             yield weibo_item
 
-    def parse_div_list_a(self, div_list_a):
-        for i in div_list_a:
+    def parse_div_list_v2(self, div_list_v2):
+        for i in div_list_v2:
             print('------------------')
             print(etree.tostring(i, encoding='utf-8', pretty_print=True).decode())
             weibo_item = WeiboItem()
             weibo_item['mid'] = i.xpath('./@mid')[0]
-            weibo_item['nickname'] = i.xpath('./div[@class="subinfo_box clearfix"]/a[2]/span/text()')[0]
-            date_str = i.xpath('./div[@class="subinfo_box clearfix"]/span[@class="subinfo S_txt2"]/text()')[0]
-            weibo_item['date'] = self.parse_datestr(date_str)
-            content_div = i.xpath('./*[1]/*')[0]
-            weibo_item['content'] = self.parse_content_div(content_div)
-            weibo_item['source_url'] = i.xpath('./@href')[0]
-            weibo_item['image_urls'] = i.xpath('./div[@class="list_nod clearfix"]/div/img/@src')
-            weibo_item['video_url'] = None
+            weibo_item['nickname'] = \
+                i.xpath('./div[@class="list_des"]/div[@class="subinfo_box clearfix"]/a[2]/span/text()')[0]
+            date_str = \
+                i.xpath(
+                    './div[@class="list_des"]/div[@class="subinfo_box clearfix"]/span[@class="subinfo S_txt2"]/text()')[
+                    0]
+            weibo_item['date'] = self.process_datestr(date_str)
+            content_div = i.xpath('./div[@class="list_des"]/*[1]/*')[0]
+            weibo_item['content'] = self.process_content(content_div)
+            weibo_item['source_url'] = i.xpath('./div[@class="vid"]/@href')[0]
+            weibo_item['image_urls'] = None
+            action_data = i.xpath('./div[@class="vid"]/@action-data')[0]
+            video_src = action_data[action_data.index('video_src=') + 10:action_data.index('&cover_img=')]
+            weibo_item['video_url'] = parse.unquote(video_src)
             nums = i.xpath(
-                './div[@class="subinfo_box clearfix"]/span[@class="subinfo_rgt S_txt2"]/em[2]/text()')
+                './div[@class="list_des"]/div[@class="subinfo_box clearfix subinfo_box_btm"]/span[@class="subinfo_rgt '
+                'S_txt2"]/em[2]/text()')[0]
             weibo_item['forwarding_num'] = nums[-1]
             weibo_item['comment_num'] = nums[-2]
             weibo_item['praise_num'] = nums[-3]
@@ -131,16 +146,20 @@ class UnloginCrawl(CrawlSpider):
             print('------------------')
             yield weibo_item
 
+    def parse_user(self, response):
+        print('lllllllllllllllllllllllllllllllllllllllllllllllllllllllll')
+        print((response.body.decode('utf-8')))
+
     @staticmethod
-    def parse_content_div(content_div):
-        text = content_div.text if content_div.text is not None else ""
-        for sub_ele in content_div.itertext():
+    def process_content(content):
+        text = content.text if content.text is not None else ""
+        for sub_ele in content.itertext():
             text += sub_ele
         return text
 
     @staticmethod
-    def parse_datestr(date_str):
-        pattern = re.compile(r'(?:(\d+)\w)?(\d+)\w(\d+)\w\s(\d+):(\d+)')
+    def process_datestr(date_str):
+        pattern = re.compile(r'(?:(\d+)年)?(\d+)月(\d+)日\s(\d+):(\d+)')
         match = pattern.match(date_str)
         if match:
             if match.group(1):
@@ -150,11 +169,28 @@ class UnloginCrawl(CrawlSpider):
                 time_tuple = time.struct_time((time.localtime().tm_year, time_tuple.tm_mon, time_tuple.tm_mday,
                                                time_tuple.tm_hour, time_tuple.tm_min, 0, -1, -1, -1))
         # 今天 H:M
-        else:
+        elif re.match(r'今天\s\d+:\d+', date_str):
             time_tuple = time.strptime(date_str, "今天 %H:%M")
             time_tuple = time.struct_time((time.localtime().tm_year, time.localtime().tm_mon,
                                            time.localtime().tm_mday, time_tuple.tm_hour, time_tuple.tm_min, 0, -1,
                                            -1, -1))
+
+        # X分钟前
+        else:
+            match = re.match(r'(\d+)分钟前', date_str)
+            if match.group(1):
+                passmin = int(match.group(1))
+                time_tuple = time.struct_time((time.localtime().tm_year, time.localtime().tm_mon,
+                                               time.localtime().tm_mday, time.localtime().tm_hour,
+                                               time.localtime().tm_min - passmin, 0, -1,
+                                               -1, -1))
+            elif re.match(r'\d+秒前', date_str):
+                time_tuple = time.struct_time((time.localtime().tm_year, time.localtime().tm_mon,
+                                               time.localtime().tm_mday, time.localtime().tm_hour,
+                                               time.localtime().tm_min, 0, -1, -1, -1))
+            else:
+                raise RuntimeError('cant process this date_str: %s' % date_str)
+
         return time.mktime(time_tuple)
 
     @staticmethod
