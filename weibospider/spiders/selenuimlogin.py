@@ -11,6 +11,13 @@ import re
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.ui import WebDriverWait
 
+"""
+在spiders目录中添加users.txt文件，内容格式为：
+每行一个账号，账号密码以空格获Tab隔开，如：
+user1 passwd1
+user2 passwd2
+user3 passwd3
+"""
 
 class seleniumlogin(object):
     def __init__(self):
