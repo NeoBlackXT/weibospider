@@ -1,16 +1,18 @@
+import logging
+import traceback
+import random
+import time
+import json
+import re
+from urllib import parse
+
+import scrapy
 from scrapy import Request
 from scrapy.http import HtmlResponse
 from scrapy.linkextractors import LinkExtractor
-from scrapy.spiders import CrawlSpider
-from weibospider.items import WeiboItem
-from weibospider.items import UserItem
-import random
+from scrapy.spiders import CrawlSpider, Spider
+from weibospider.items import WeiboItem, UserItem
 from lxml import etree
-import scrapy
-import time
-from urllib import parse
-import json
-import re
 
 
 class UnloginCrawl(CrawlSpider):
@@ -19,9 +21,9 @@ class UnloginCrawl(CrawlSpider):
     # 爬取分类
     category = 0
     # 爬取起始页
-    page = 1
+    page = 100
     # 爬取终止页
-    end_page = 1
+    end_page = 900
 
     def start_requests(self):
         while self.page <= self.end_page:
@@ -32,17 +34,9 @@ class UnloginCrawl(CrawlSpider):
             self.page += 1
 
     def parse(self, response):
-        _json = str(eval(response.body.decode('utf-8')))
-        _html = _json[_json.index("'data': '") + 9: _json.rindex("'}")].strip()
-        _html = re.sub(r'\\\\"', '"', _html)
-        _html = re.sub(r'\\\\/', '/', _html)
-        _html = re.sub(r'\\r', '\r', _html)
-        _html = re.sub(r'\\n', '\n', _html)
-        _html = re.sub(r'\\t', '\t', _html)
-        _html = re.sub(r"\\'", "'", _html)
-        # 非utf-8字符，无法识别
-        # _html = re.sub(r'\\x', r'\\\\x', _html)
-        # _html = re.sub(r'(\\U\w{8})', r'\\\1', _html)
+        _json = response.body.decode('utf-8')
+        _html = self.jsonp_to_html(_json, 'data')
+
         html = etree.HTML(_html)
 
         div_list_a = html.xpath('//div[@class="UG_list_a"]')
@@ -67,35 +61,35 @@ class UnloginCrawl(CrawlSpider):
 
     def parse_div_list_a(self, div_list_a):
         for i in div_list_a:
-            print('------------------')
-            print(etree.tostring(i, encoding='utf-8', pretty_print=True).decode())
+            Spider.log(self, '------------------')
+            Spider.log(self, etree.tostring(i, encoding='utf-8', pretty_print=True))
             weibo_item = WeiboItem()
-            weibo_item['mid'] = i.xpath('./@mid')[0]
-            weibo_item['nickname'] = i.xpath('./div[@class="subinfo_box clearfix"]/a[2]/span/text()')[0]
+            weibo_item['mid'] = str(i.xpath('./@mid')[0])
+            weibo_item['nickname'] = str(i.xpath('./div[@class="subinfo_box clearfix"]/a[2]/span/text()')[0])
             date_str = i.xpath('./div[@class="subinfo_box clearfix"]/span[@class="subinfo S_txt2"]/text()')[0]
             weibo_item['date'] = self.process_datestr(date_str)
             content_div = i.xpath('./*[1]/*')[0]
             weibo_item['content'] = self.process_content(content_div)
-            weibo_item['source_url'] = i.xpath('./@href')[0]
-            weibo_item['image_urls'] = i.xpath('./div[@class="list_nod clearfix"]/div/img/@src')
+            weibo_item['source_url'] = 'http:' + i.xpath('./@href')[0]
+            weibo_item['image_urls'] = [str(u) for u in i.xpath('./div[@class="list_nod clearfix"]/div/img/@src')]
             weibo_item['video_url'] = None
             nums = i.xpath(
                 './div[@class="subinfo_box clearfix"]/span[@class="subinfo_rgt S_txt2"]/em[2]/text()')
-            weibo_item['forwarding_num'] = nums[-1]
-            weibo_item['comment_num'] = nums[-2]
-            weibo_item['praise_num'] = nums[-3]
-            print(weibo_item)
-            print('------------------')
+            weibo_item['forwarding_num'] = int(nums[-1])
+            weibo_item['comment_num'] = int(nums[-2])
+            weibo_item['praise_num'] = int(nums[-3])
+            Spider.log(self, weibo_item)
+            Spider.log(self, '------------------')
             yield weibo_item
 
     def parse_div_list_b(self, div_list_b):
         for i in div_list_b:
-            print('------------------')
-            print(etree.tostring(i, encoding='utf-8', pretty_print=True).decode())
+            Spider.log(self, '------------------')
+            Spider.log(self, etree.tostring(i, encoding='utf-8', pretty_print=True).decode())
             weibo_item = WeiboItem()
-            weibo_item['mid'] = i.xpath('./@mid')[0]
+            weibo_item['mid'] = str(i.xpath('./@mid')[0])
             weibo_item['nickname'] = \
-                i.xpath('./div[@class="list_des"]/div[@class="subinfo_box clearfix"]/a[2]/span/text()')[0]
+                str(i.xpath('./div[@class="list_des"]/div[@class="subinfo_box clearfix"]/a[2]/span/text()')[0])
             date_str = \
                 i.xpath(
                     './div[@class="list_des"]/div[@class="subinfo_box clearfix"]/span[@class="subinfo S_txt2"]/text()')[
@@ -103,35 +97,35 @@ class UnloginCrawl(CrawlSpider):
             weibo_item['date'] = self.process_datestr(date_str)
             content_div = i.xpath('./div[@class="list_des"]/*[1]/*')[0]
             weibo_item['content'] = self.process_content(content_div)
-            weibo_item['source_url'] = i.xpath('./@href')[0]
-            weibo_item['image_urls'] = i.xpath('./div[1]/img/@src')
+            weibo_item['source_url'] = 'http:' + i.xpath('./@href')[0]
+            weibo_item['image_urls'] = [str(u) for u in i.xpath('./div[1]/img/@src')]
             weibo_item['video_url'] = None
             nums = i.xpath(
                 './div[@class="list_des"]/div[@class="subinfo_box clearfix"]/span[@class="subinfo_rgt S_txt2"]/em['
                 '2]/text()')
-            weibo_item['forwarding_num'] = nums[-1]
-            weibo_item['comment_num'] = nums[-2]
-            weibo_item['praise_num'] = nums[-3]
-            print(weibo_item)
-            print('------------------')
+            weibo_item['forwarding_num'] = int(nums[-1])
+            weibo_item['comment_num'] = int(nums[-2])
+            weibo_item['praise_num'] = int(nums[-3])
+            Spider.log(self, weibo_item)
+            Spider.log(self, '------------------')
             yield weibo_item
 
     def parse_div_list_v2(self, div_list_v2):
         for i in div_list_v2:
-            print('------------------')
-            print(etree.tostring(i, encoding='utf-8', pretty_print=True).decode())
+            Spider.log(self, '------------------')
+            Spider.log(self, etree.tostring(i, encoding='utf-8', pretty_print=True).decode())
             weibo_item = WeiboItem()
-            weibo_item['mid'] = i.xpath('./@mid')[0]
+            weibo_item['mid'] = str(i.xpath('./@mid')[0])
             weibo_item['nickname'] = \
-                i.xpath('./div[@class="list_des"]/div[@class="subinfo_box clearfix"]/a[2]/span/text()')[0]
+                str(i.xpath('./div[@class="list_des"]/div[@class="subinfo_box clearfix"]/a[2]/span/text()')[0])
             date_str = \
                 i.xpath(
-                    './div[@class="list_des"]/div[@class="subinfo_box clearfix"]/span[@class="subinfo S_txt2"]/text()')[
-                    0]
+                    './div[@class="list_des"]/div[@class="subinfo_box clearfix"]/span[@class="subinfo S_txt2"]/'
+                    'text()')[0]
             weibo_item['date'] = self.process_datestr(date_str)
             content_div = i.xpath('./div[@class="list_des"]/*[1]/*')[0]
             weibo_item['content'] = self.process_content(content_div)
-            weibo_item['source_url'] = i.xpath('./div[@class="vid"]/@href')[0]
+            weibo_item['source_url'] = 'http:' + i.xpath('./div[@class="vid"]/@href')[0]
             weibo_item['image_urls'] = None
             action_data = i.xpath('./div[@class="vid"]/@action-data')[0]
             video_src = action_data[action_data.index('video_src=') + 10:action_data.index('&cover_img=')]
@@ -139,16 +133,59 @@ class UnloginCrawl(CrawlSpider):
             nums = i.xpath(
                 './div[@class="list_des"]/div[@class="subinfo_box clearfix subinfo_box_btm"]/span[@class="subinfo_rgt '
                 'S_txt2"]/em[2]/text()')[0]
-            weibo_item['forwarding_num'] = nums[-1]
-            weibo_item['comment_num'] = nums[-2]
-            weibo_item['praise_num'] = nums[-3]
-            print(weibo_item)
-            print('------------------')
+            weibo_item['forwarding_num'] = int(nums[-1])
+            weibo_item['comment_num'] = int(nums[-2])
+            weibo_item['praise_num'] = int(nums[-3])
+            Spider.log(self, weibo_item)
+            Spider.log(self, '------------------')
             yield weibo_item
 
     def parse_user(self, response):
-        print('lllllllllllllllllllllllllllllllllllllllllllllllllllllllll')
-        print((response.body.decode('utf-8')))
+        Spider.log(self, "%s\r\nurl: %s" % (response.body.decode('utf-8'), response.request.url))
+        Spider.log(self, 'parse_user start 11111111111111111111111')
+        try:
+            user_item = UserItem()
+            _json = response.xpath(
+                '''/html/script[starts-with(text(),'FM.view({"ns":"pl.header.preloginHead.index",'''
+                '''"domid":"Pl_Official_Headerv6') or starts-with(text(),'FM.view({"ns":"pl.header.head.index",'''
+                '''"domid":"Pl_Official_Headerv6')]/text()''').extract()[0]
+            _html = self.jsonp_to_html(_json)
+            _html_ele = etree.HTML(_html)
+            user_item['nickname'] = str(_html_ele.xpath('./descendant::h1[@class="username"]/text()')[0])
+            Spider.log(self, _html, level=logging.INFO)
+            gender_class = \
+                _html_ele.xpath('./descendant::i[@class="W_icon icon_pf_female" or @class="W_icon icon_pf_male"]/'
+                                '@class')[0]
+            user_item['gender'] = gender_class[gender_class.rindex('_') + 1:]
+            # vip6的样式W_icon icon_member6
+            user_item['is_vip'] = len(_html_ele.xpath('./descendant::a[@href="http://vip.weibo.com/personal?'
+                                                      'from=main"]/em[not(contains(@class,"icon_member_dis"))]')) > 0
+            user_item['verified'] = len(_html_ele.xpath('./descendant::div[@class="pf_photo"]/a')) > 0
+            user_item['introduction'] = _html_ele.xpath('./descendant::div[@class="pf_intro" and 2]/text()')[0].strip()
+            _json = response.xpath(
+                '''/html/script[starts-with(text(),'FM.view({"ns":"pl.content.homeFeed.index",'''
+                '''"domid":"Pl_Core_UserInfo')]/text()''').extract()[0]
+            _html = self.jsonp_to_html(_json)
+            _html_ele = etree.HTML(_html)
+            level_text = _html_ele.xpath('./descendant::a/span/text()')[0]
+            user_item['level'] = int(level_text[level_text.index('.') + 1:])
+            _json = response.xpath('''/html/script[starts-with(text(),'FM.view({"ns":"","domid":'''
+                                   '''"Pl_Core_T8CustomTriColumn')]''').extract()[0]
+            _html = self.jsonp_to_html(_json)
+            _html_ele = etree.HTML(_html)
+            nums = _html_ele.xpath('./descendant::td/descendant::strong/text()')
+            user_item['concern_num'] = int(nums[0])
+            user_item['fans_num'] = int(nums[1])
+            user_item['weibo_num'] = int(nums[2])
+            user_item['home_url'] = response.request.url[
+                                    :response.request.url.index('?') if response.request.url.count('?') else None]
+            Spider.log(self, _html, level=logging.INFO)
+            Spider.log(self, 'user_item: %s' % user_item, level=logging.INFO)
+            return user_item
+        except:
+            Spider.log(self, "%s\n%s" % (response.request.url, _html), logging.ERROR)
+            traceback.print_exc()
+            input('按任意键继续')
 
     @staticmethod
     def process_content(content):
@@ -194,7 +231,8 @@ class UnloginCrawl(CrawlSpider):
         return time.mktime(time_tuple)
 
     @staticmethod
-    def jsonp_to_json(jsonp):
+    def jsonp_to_dict(jsonp):
+        """把jsonp中的json转为dict"""
         patten = re.compile(r'{(?u).*}')
         result = re.search(patten, jsonp)
         if result:
@@ -209,3 +247,19 @@ class UnloginCrawl(CrawlSpider):
             return json_load
         else:
             raise RuntimeError('No json found!')
+
+    @staticmethod
+    def jsonp_to_html(jsonp, key='html'):
+        """把jsonp中键为key的html取出"""
+        json_dict = UnloginCrawl.jsonp_to_dict(jsonp)
+        _html = json_dict[key]
+        _html = re.sub(r'\\\\"', '"', _html)
+        _html = re.sub(r'\\\\/', '/', _html)
+        _html = re.sub(r'\\r', '\r', _html)
+        _html = re.sub(r'\\n', '\n', _html)
+        _html = re.sub(r'\\t', '\t', _html)
+        _html = re.sub(r"\\'", "'", _html)
+        # 非utf-8字符，无法识别
+        # _html = re.sub(r'\\x', r'\\\\x', _html)
+        # _html = re.sub(r'(\\U\w{8})', r'\\\1', _html)
+        return _html

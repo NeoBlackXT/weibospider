@@ -23,10 +23,11 @@ class WeiboItem(scrapy.Item):
 
 class UserItem(scrapy.Item):
     nickname = scrapy.Field()
-    verified = scrapy.Field()
+    gender = scrapy.Field()
     is_vip = scrapy.Field()
-    level = scrapy.Field()
+    verified = scrapy.Field()
     introduction = scrapy.Field()
+    level = scrapy.Field()
     concern_num = scrapy.Field()
     fans_num = scrapy.Field()
     weibo_num = scrapy.Field()
