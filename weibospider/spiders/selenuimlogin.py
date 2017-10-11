@@ -13,17 +13,16 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 """
 在spiders目录中添加users.txt文件，内容格式为：
-每行一个账号，账号密码以空格获Tab隔开，如：
+每行一个账号，账号密码以空格或Tab隔开，如：
 user1 passwd1
 user2 passwd2
 user3 passwd3
 """
 
-class seleniumlogin(object):
-    def __init__(self):
 
+class SeleniumLogin(object):
+    def __init__(self):
         self.users = {}
-        self.iteritems = {}
         with open('users.txt', 'r') as f:
             while True:
                 line = f.readline()
@@ -36,6 +35,7 @@ class seleniumlogin(object):
             print(self.users)
 
     def get_cookies(self):
+        driver = None
         # options = webdriver.ChromeOptions()
         # Chrome canary的默认安装路径
         # options.binary_location = 'C:/Users/admin/AppData/Local/Google/Chrome SxS/Application/chrome.exe'
@@ -57,7 +57,7 @@ class seleniumlogin(object):
                                                            "AppleWebKit/537.36 (KHTML, like Gecko) " \
                                                            "Chrome/61.0.3157.3 Safari/537.36"
 
-                driver = webdriver.PhantomJS(executable_path='d:/dev/phantomjs/bin/phantomjs.exe',
+                driver = webdriver.PhantomJS(executable_path='d:/Dev/phantomjs/bin/phantomjs.exe',
                                              desired_capabilities=dcap)
                 driver.get('https://login.sina.com.cn')
                 WebDriverWait(driver, 10). \
@@ -104,10 +104,11 @@ class seleniumlogin(object):
                 ecstr = traceback.format_exc()
                 print(ecstr)
             finally:
-                driver.close()
+                if driver is not None:
+                    driver.close()
 
 
 if __name__ == '__main__':
-    cookies = seleniumlogin().get_cookies()
+    cookies = SeleniumLogin().get_cookies()
     for cookie in cookies:
         print(cookie)

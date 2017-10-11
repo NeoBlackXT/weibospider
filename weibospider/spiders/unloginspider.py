@@ -7,6 +7,7 @@ import re
 from urllib import parse
 
 import scrapy
+import sys
 from scrapy import Request
 from scrapy.http import HtmlResponse
 from scrapy.linkextractors import LinkExtractor
@@ -18,12 +19,13 @@ from lxml import etree
 class UnloginCrawl(CrawlSpider):
     name = 'unlogincrawl'
     allowed_domains = ['weibo.com']
+
     # 爬取分类
     category = 0
     # 爬取起始页
-    page = 100
+    page = 1
     # 爬取终止页
-    end_page = 900
+    end_page = sys.maxsize
 
     def start_requests(self):
         while self.page <= self.end_page:
@@ -33,7 +35,7 @@ class UnloginCrawl(CrawlSpider):
             yield Request(_url)
             self.page += 1
 
-    def parse(self, response):
+    def parse_start_url(self, response):
         _json = response.body.decode('utf-8')
         _html = self.jsonp_to_html(_json, 'data')
 
@@ -142,7 +144,7 @@ class UnloginCrawl(CrawlSpider):
 
     def parse_user(self, response):
         Spider.log(self, "%s\r\nurl: %s" % (response.body.decode('utf-8'), response.request.url))
-        Spider.log(self, 'parse_user start 11111111111111111111111')
+        Spider.log(self, 'parse_user start')
         try:
             user_item = UserItem()
             _json = response.xpath(
