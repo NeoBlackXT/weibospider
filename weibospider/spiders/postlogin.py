@@ -1,3 +1,4 @@
+import gzip
 import json
 import random
 import re
@@ -171,7 +172,10 @@ class PostLogin(object):
                                        method='POST')
         post_resp = request.urlopen(post_request)
         if post_resp.getcode() == 200:
-            rtn_json = post_resp.read().decode()
+            read = post_resp.read()
+            if post_resp.getheader('Content-Encoding') == 'gzip':
+                read = gzip.decompress(read)
+            rtn_json = read.decode()
             rtn_dict = json.loads(rtn_json)
             cookies_str = ''
             if rtn_dict['retcode'] == '0':
@@ -193,10 +197,10 @@ class PostLogin(object):
                     cookies_str = door_resp.getheader('Set-Cookie')
                     png = door_resp.read()
                     with open('d:/door.png', 'wb') as f:
-                        f.write(str(png))
+                        f.write(png)
                         f.close()
                     _cookies = self.__process_cookies_str(cookies_str)
-                    door = input(rtn_dict['reason'])
+                    door = input(rtn_dict['reason'] + "\n")
                     return self.__login(prelogin_dict, prelt, sp, su, url, _cookies, door)
             else:
                 raise RuntimeError('未知错误，返回消息为： %s' % rtn_dict)
