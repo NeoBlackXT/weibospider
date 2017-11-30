@@ -2,8 +2,37 @@
 #
 # See documentation in:
 # http://doc.scrapy.org/en/latest/topics/spider-middleware.html
+import random
 
 from scrapy import signals
+
+
+class RandomUserAgentMiddleware(object):
+    def __init__(self, ualist):
+        self.ualist = ualist
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler.settings.getlist('USER_AGENT_POOL'))
+
+    def process_request(self, request, spider):
+        ua = random.choice(self.ualist)
+        request.headers.setdefault(b'User-Agent', ua)
+        spider.log('User-Agent: %s' % ua)
+
+
+class RandomProxyMiddleware(object):
+    def __init__(self, iplist):
+        self.iplist = iplist
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler.settings.getlist('IP_PROXY_POOL'))
+
+    def process_request(self, request, spider):
+        proxy = random.choice(self.iplist)
+        request.meta['proxy'] = proxy
+        spider.log('proxy: %s' % proxy)
 
 
 class WeiboSpiderMiddleware(object):
