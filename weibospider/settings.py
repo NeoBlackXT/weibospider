@@ -30,7 +30,7 @@ DOWNLOAD_DELAY = 5
 CONCURRENT_REQUESTS_PER_IP = 2
 
 # Disable cookies (enabled by default)
-COOKIES_ENABLED = False
+# COOKIES_ENABLED = False
 
 # Disable Telnet Console (enabled by default)
 # TELNETCONSOLE_ENABLED = False
@@ -69,9 +69,9 @@ DOWNLOADER_MIDDLEWARES = {
 
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
-# ITEM_PIPELINES = {
-#    'weibospider.pipelines.WeiboPipeline': 300,
-# }
+ITEM_PIPELINES = {
+   'weibospider.pipelines.WeiboPipeline': 300,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See http://doc.scrapy.org/en/latest/topics/autothrottle.html
@@ -96,6 +96,9 @@ DOWNLOADER_MIDDLEWARES = {
 # AJAXCRAWL_ENABLED = True
 
 CRAWLSPIDER_FOLLOW_LINKS = False
+
+# 设置下载超时（默认180.0秒）
+DOWNLOAD_TIMEOUT = 10
 
 USER_AGENT_POOL = [
     'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.8) Gecko Fedora/1.9.0.8-1.fc10 Kazehakase/0.5.6',
@@ -122,7 +125,7 @@ USER_AGENT_POOL = [
 ]
 
 IP_PROXY_POOL = [
-    'http://112.114.92.198:8118',
-    'http://111.124.231.101:6668',
-    'http://61.138.104.30:1080'
+    'https://125.119.249.102:8118',
+
 ]
+

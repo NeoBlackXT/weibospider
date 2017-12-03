@@ -30,7 +30,7 @@ class UnloginCrawl(CrawlSpider):
     def start_requests(self):
         while self.page <= self.end_page:
             _rnd = str(int(time.time())) + str(random.randint(100, 999))
-            _url = 'http://weibo.com/a/aj/transform/loadingmoreunlogin?ajwvr=6&category=%d&page=%d&lefnav=0&__rnd=%s' \
+            _url = 'https://weibo.com/a/aj/transform/loadingmoreunlogin?ajwvr=6&category=%d&page=%d&lefnav=0&__rnd=%s' \
                    % (self.category, self.page, _rnd)
             yield Request(_url)
             self.page += 1
