@@ -1,20 +1,20 @@
 from scrapy.dupefilters import RFPDupeFilter
 from scrapy.utils.job import job_dir
+from w3lib.url import canonicalize_url
 
 from weibospider import general_hash_functions
 import redis
 
 
 class BloomFilter(RFPDupeFilter):
-    hash_list = ['rs_hash', 'js_hash', 'pjw_hash', 'elf_hash', 'bkdr_hash', 'sdbm_hash', 'djb_hash', 'dek_hash',
-                 'bp_hash', 'fnv_hash', 'ap_hash']
+    hash_list = ['rs_hash', 'js_hash', 'pjw_hash', 'elf_hash', 'bkdr_hash', 'sdbm_hash', 'djb_hash', 'dek_hash']
 
     def __init__(self, path=None, debug=False, host=None, port=6379, db=0, password=None):
         if host is None:
             raise RuntimeError("REDIS_BLOOM_HOST未在settings中配置")
         super(BloomFilter,self).__init__(path=path, debug=debug)
-        pool = redis.ConnectionPool(host=host, port=port, db=db, password=password)
-        self.r = redis.Redis(connection_pool=pool)
+        self.pool = redis.ConnectionPool(host=host, port=port, db=db, password=password)
+        self.r = redis.Redis(connection_pool=self.pool)
         self.hash_list = BloomFilter.hash_list
 
     def filter(self, name='bloom', text=''):
@@ -42,4 +42,7 @@ class BloomFilter(RFPDupeFilter):
         return cls(job_dir(settings), debug, host, port, db, password)
 
     def request_seen(self, request):
-        return self.filter(text=request.url)
+        return self.filter(text=canonicalize_url(request.url))
+
+    def close(self, reason):
+        self.pool.disconnect()
