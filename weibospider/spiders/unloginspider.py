@@ -36,7 +36,8 @@ class UnloginCrawl(CrawlSpider):
             self.page += 1
 
     def parse_start_url(self, response):
-        _json = response.body.decode('utf-8')
+        # _json = response.body.decode('utf-8')
+        _json = response.text
         _html = self.jsonp_to_html(_json, 'data')
 
         html = etree.HTML(_html)
@@ -49,21 +50,21 @@ class UnloginCrawl(CrawlSpider):
         yield from self.parse_div_list_v2(div_list_v2)
 
         for i in div_list_a:
-            user_home_url = 'http://weibo.com' + i.xpath('./div[@class="subinfo_box clearfix"]/a[2]/@href')[0]
+            user_home_url = 'https://weibo.com' + i.xpath('./div[@class="subinfo_box clearfix"]/a[2]/@href')[0]
             yield Request(user_home_url, callback=self.parse_user, cookies={'SUB': 'SUB'})
 
         for i in div_list_b:
-            user_home_url = 'http://weibo.com' + \
+            user_home_url = 'https://weibo.com' + \
                             i.xpath('./div[@class="list_des"]/div[@class="subinfo_box clearfix"]/a[2]/@href')[0]
             yield Request(user_home_url, callback=self.parse_user, cookies={'SUB': 'SUB'})
         for i in div_list_v2:
-            user_home_url = 'http:' + i.xpath('./div[@class="list_des"]/div[@class="subinfo_box clearfix"]/a[2]/@href')[
+            user_home_url = 'https:' + i.xpath('./div[@class="list_des"]/div[@class="subinfo_box clearfix"]/a[2]/@href')[
                 0]
             yield Request(user_home_url, callback=self.parse_user, cookies={'SUB': 'SUB'})
 
     def parse_div_list_a(self, div_list_a):
         for i in div_list_a:
-            Spider.log(self, '------------------')
+            Spider.log(self, '-' * 10)
             Spider.log(self, etree.tostring(i, encoding='utf-8', pretty_print=True))
             weibo_item = WeiboItem()
             weibo_item['mid'] = str(i.xpath('./@mid')[0])
@@ -81,12 +82,12 @@ class UnloginCrawl(CrawlSpider):
             weibo_item['comment_num'] = int(nums[-2])
             weibo_item['praise_num'] = int(nums[-3])
             Spider.log(self, weibo_item)
-            Spider.log(self, '------------------')
+            Spider.log(self,'-' * 10)
             yield weibo_item
 
     def parse_div_list_b(self, div_list_b):
         for i in div_list_b:
-            Spider.log(self, '------------------')
+            Spider.log(self, '-' * 10)
             Spider.log(self, etree.tostring(i, encoding='utf-8', pretty_print=True).decode())
             weibo_item = WeiboItem()
             weibo_item['mid'] = str(i.xpath('./@mid')[0])
@@ -109,12 +110,12 @@ class UnloginCrawl(CrawlSpider):
             weibo_item['comment_num'] = int(nums[-2])
             weibo_item['praise_num'] = int(nums[-3])
             Spider.log(self, weibo_item)
-            Spider.log(self, '------------------')
+            Spider.log(self, '-' * 10)
             yield weibo_item
 
     def parse_div_list_v2(self, div_list_v2):
         for i in div_list_v2:
-            Spider.log(self, '------------------')
+            Spider.log(self, '-' * 10)
             Spider.log(self, etree.tostring(i, encoding='utf-8', pretty_print=True).decode())
             weibo_item = WeiboItem()
             weibo_item['mid'] = str(i.xpath('./@mid')[0])
@@ -139,14 +140,15 @@ class UnloginCrawl(CrawlSpider):
             weibo_item['comment_num'] = int(nums[-2])
             weibo_item['praise_num'] = int(nums[-3])
             Spider.log(self, weibo_item)
-            Spider.log(self, '------------------')
+            Spider.log(self, '-' * 10)
             yield weibo_item
 
     def parse_user(self, response):
-        Spider.log(self, "%s\r\nurl: %s" % (response.body.decode('utf-8'), response.request.url))
+        Spider.log(self, "%s\r\nurl: %s" % (response.text, response.request.url))
         Spider.log(self, 'parse_user start')
         try:
             user_item = UserItem()
+            _html = response.text
             _json = response.xpath(
                 '''/html/script[starts-with(text(),'FM.view({"ns":"pl.header.preloginHead.index",'''
                 '''"domid":"Pl_Official_Headerv6') or starts-with(text(),'FM.view({"ns":"pl.header.head.index",'''
@@ -185,7 +187,7 @@ class UnloginCrawl(CrawlSpider):
             Spider.log(self, 'user_item: %s' % user_item, level=logging.INFO)
             return user_item
         except:
-            Spider.log(self, "%s\n%s" % (response.request.url, _html), logging.ERROR)
+            Spider.log(self, "%s\n%s" % (response.url, _html), logging.ERROR)
             traceback.print_exc()
             input('按任意键继续')
 
