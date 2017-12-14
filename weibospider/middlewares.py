@@ -4,7 +4,15 @@
 # http://doc.scrapy.org/en/latest/topics/spider-middleware.html
 import random
 
+from twisted.internet import defer
+from twisted.internet.error import TimeoutError, DNSLookupError, \
+        ConnectionRefusedError, ConnectionDone, ConnectError, \
+        ConnectionLost, TCPTimedOutError
+from twisted.web.client import ResponseFailed
+
 from scrapy import signals
+from scrapy.core.downloader.handlers.http11 import TunnelError
+
 from scrapy_redis import get_redis_from_settings
 
 from weibospider.utils import IPProxyUtil
@@ -39,12 +47,23 @@ class RandomProxyMiddleware(object):
 
     def process_request(self, request, spider):
         name = '%s:bannedproxy' % spider.name
+        while True:
+            new_proxy = IPProxyUtil.get_proxy(self.proxy_pool_url)
+            times = int(self.server.hget(name, new_proxy) or 0)
+            if times >= self.proxy_times_banned_max:
+                self.__del_proxy(new_proxy, spider)
+            else:
+                request.meta['proxy'] = new_proxy
+                spider.log('proxy: %s' % new_proxy)
+                break
 
-        def del_proxy(proxy):
-            IPProxyUtil.delete_proxy(proxy, self.proxy_pool_url)
-            spider.log('删除失效代理: %s' % proxy)
-
-        if request.meta.get('retry_times', 0) > 0:
+    def process_exception(self, request, exception, spider):
+        exceptions_to_retry = (defer.TimeoutError, TimeoutError, DNSLookupError,
+                               ConnectionRefusedError, ConnectionDone, ConnectError,
+                               ConnectionLost, TCPTimedOutError, ResponseFailed,
+                               IOError, TunnelError)
+        name = '%s:bannedproxy' % spider.name
+        if isinstance(exception, exceptions_to_retry) and not request.meta.get('dont_retry', False):
             banned_proxy = request.meta.get('proxy', None)
             if banned_proxy:
                 # hget返回为bytes
@@ -52,18 +71,13 @@ class RandomProxyMiddleware(object):
                 if times >= self.proxy_times_banned_max:
                     # 不删除redis中失效的代理，如果代理池中再次出现原来已失效的代理可再次过滤
                     # self.server.hdel(name, banned_proxy)
-                    del_proxy(banned_proxy)
+                    self.__del_proxy(banned_proxy, spider)
                 else:
                     self.server.hset(name, banned_proxy, times + 1)
-        while True:
-            new_proxy = IPProxyUtil.get_proxy(self.proxy_pool_url)
-            times = int(self.server.hget(name, new_proxy) or 0)
-            if times >= self.proxy_times_banned_max:
-                del_proxy(new_proxy)
-            else:
-                request.meta['proxy'] = new_proxy
-                spider.log('proxy: %s' % new_proxy)
-                break
+
+    def __del_proxy(self, proxy, spider):
+        IPProxyUtil.delete_proxy(proxy, self.proxy_pool_url)
+        spider.log('删除失效代理: %s' % proxy)
 
 
 class WeiboSpiderMiddleware(object):
