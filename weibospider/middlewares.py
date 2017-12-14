@@ -38,25 +38,31 @@ class RandomProxyMiddleware(object):
         return cls(crawler.settings)
 
     def process_request(self, request, spider):
+        name = '%s:bannedproxy' % spider.name
+
+        def del_proxy(proxy):
+            IPProxyUtil.delete_proxy(proxy, self.proxy_pool_url)
+            spider.log('删除失效代理: %s' % proxy)
+
         if request.meta.get('retry_times', 0) > 0:
             banned_proxy = request.meta.get('proxy', None)
             if banned_proxy:
-                name = '%s:bannedproxy' % spider.name
                 # hget返回为bytes
                 times = int(self.server.hget(name, banned_proxy) or 0)
                 if times >= self.proxy_times_banned_max:
                     # 不删除redis中失效的代理，如果代理池中再次出现原来已失效的代理可再次过滤
                     # self.server.hdel(name, banned_proxy)
-                    IPProxyUtil.delete_proxy(banned_proxy, self.proxy_pool_url)
-                    spider.log('删除失效代理: %s' % banned_proxy)
+                    del_proxy(banned_proxy)
                 else:
                     self.server.hset(name, banned_proxy, times + 1)
         while True:
-            proxy = IPProxyUtil.get_proxy(self.proxy_pool_url)
-            times = int(self.server.hget(name, proxy) or 0)
-            if times < self.proxy_times_banned_max:
-                request.meta['proxy'] = proxy
-                spider.log('proxy: %s' % proxy)
+            new_proxy = IPProxyUtil.get_proxy(self.proxy_pool_url)
+            times = int(self.server.hget(name, new_proxy) or 0)
+            if times >= self.proxy_times_banned_max:
+                del_proxy(new_proxy)
+            else:
+                request.meta['proxy'] = new_proxy
+                spider.log('proxy: %s' % new_proxy)
                 break
 
 

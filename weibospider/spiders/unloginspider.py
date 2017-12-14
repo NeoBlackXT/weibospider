@@ -22,7 +22,7 @@ class UnloginCrawl(CrawlSpider):
     # 爬取分类
     category = 0
     # 爬取起始页（从起始页向第一页爬取，最后只刷新第一页）
-    page = 1
+    page = 10
 
     def start_requests(self):
         while True:
