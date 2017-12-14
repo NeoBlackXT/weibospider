@@ -57,6 +57,16 @@ class RandomProxyMiddleware(object):
                 spider.log('proxy: %s' % new_proxy)
                 break
 
+    def process_response(self, request, response, spider):
+        name = '%s:bannedproxy' % spider.name
+        normal_proxy = request.meta.get('proxy', None)
+        if normal_proxy:
+            times = int(self.server.hget(name, normal_proxy) or 0)
+            # 如果正常处理请求，则为代理减掉一次失败次数
+            if times > -5:
+                self.server.hset(name, normal_proxy, times - 1)
+        return response
+
     def process_exception(self, request, exception, spider):
         exceptions_to_retry = (defer.TimeoutError, TimeoutError, DNSLookupError,
                                ConnectionRefusedError, ConnectionDone, ConnectError,
