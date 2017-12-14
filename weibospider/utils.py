@@ -61,7 +61,7 @@ class IPProxyUtil:
 
     @staticmethod
     def delete_proxy(proxy, pool_url=__POOL_URL):
-        requests.get("{}/delete/?proxy={}".format(pool_url, proxy), timeout=10)
+        requests.get("{}/delete/?proxy={}".format(pool_url, proxy[7:]), timeout=10)
 
 
 class CookieUtil:
