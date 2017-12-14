@@ -6,6 +6,8 @@ import traceback
 
 import time
 
+from pymysql import IntegrityError
+
 from weibospider.items import WeiboItem, UserItem
 import pymysql
 
@@ -19,9 +21,6 @@ class WeiboPipeline(object):
             with connection.cursor() as cursor:
                 spider.logger.info('Item type: %s' % type(item))
                 if isinstance(item, WeiboItem):
-                    # sql = "INSERT INTO `WEIBO` (`mid`,`nickname`,`date`,`content`,`source_url`,`image_urls`,`video_url`,`forwarding_num`,`comment_num`,`praise_num`) VALUES(\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',%d,%d,%d)" % (item['mid'],item['nickname'],time.strftime('%Y%m%d%H%M%S',time.localtime(item['date'])),item['content'],item['source_url'],';'.join(item['image_urls'] or ''),item['video_url'] or '',item['forwarding_num'],item['comment_num'],item['praise_num'])
-                    # spider.logger.info('SQL: %s'%sql)
-                    # cursor.execute(sql)
                     sql = "INSERT INTO `T_WEIBO` (`mid`,`nickname`,`date`,`content`,`source_url`,`image_urls`,`video_url`,`forwarding_num`,`comment_num`,`praise_num`) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
                     spider.logger.info(item)
                     spider.logger.info('%s %s %s'%(item['forwarding_num'],item['comment_num'],item['praise_num']))
@@ -36,8 +35,11 @@ class WeiboPipeline(object):
                         item['level'],
                         item['concern_num'], item['fans_num'], item['weibo_num'], item['home_url']))
                 connection.commit()
+        except IntegrityError:
+            # 主键重复
+            pass
         except:
-                traceback.print_exc()
+            traceback.print_exc()
         finally:
                 connection.close()
         return item
