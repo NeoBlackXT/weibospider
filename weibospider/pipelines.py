@@ -14,7 +14,6 @@ import pymysql
 
 class WeiboPipeline(object):
     def process_item(self, item, spider):
-        spider.logger.info('pipeline started')
         connection = pymysql.connect(host='localhost', user='root', password='root', db='weibo', charset='utf8mb4',
                                      cursorclass=pymysql.cursors.DictCursor)
         try:
