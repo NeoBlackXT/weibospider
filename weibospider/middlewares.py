@@ -5,6 +5,9 @@
 import random
 
 from scrapy import signals
+from scrapy_redis import get_redis_from_settings
+
+from weibospider.utils import IPProxyUtil
 
 
 class RandomUserAgentMiddleware(object):
@@ -22,15 +25,32 @@ class RandomUserAgentMiddleware(object):
 
 
 class RandomProxyMiddleware(object):
-    def __init__(self, iplist):
-        self.iplist = iplist
+    def __init__(self, settings):
+        self.settings = settings
+        self.server = get_redis_from_settings(settings)
+        # 默认代理池URL为http://127.0.0.1:5010
+        self.proxy_pool_url = settings.get('PROXY_POOL_URL', 'http://127.0.0.1:5010')
+        # 默认请求失败5次视为代理失效
+        self.proxy_times_banned_max = settings.getint('PROXY_TIMES_BANNED_MAX', 5)
 
     @classmethod
     def from_crawler(cls, crawler):
-        return cls(crawler.settings.getlist('IP_PROXY_POOL'))
+        return cls(crawler.settings)
 
     def process_request(self, request, spider):
-        proxy = random.choice(self.iplist)
+        if request.meta.get('retry_times', 0) > 0:
+            banned_proxy = request.meta.get('proxy', None)
+            if banned_proxy:
+                name = '%s:bannedproxy' % spider.name
+                # hget返回为bytes
+                times = int(self.server.hget(name, banned_proxy) or 0)
+                if times >= self.proxy_times_banned_max:
+                    self.server.hdel(name, banned_proxy)
+                    IPProxyUtil.delete_proxy(banned_proxy, self.proxy_pool_url)
+                    spider.log('删除失效代理: %s' % banned_proxy)
+                else:
+                    self.server.hset(name, banned_proxy, times + 1)
+        proxy = IPProxyUtil.get_proxy(self.proxy_pool_url)
         request.meta['proxy'] = proxy
         spider.log('proxy: %s' % proxy)
 
