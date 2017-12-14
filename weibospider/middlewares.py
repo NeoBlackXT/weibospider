@@ -46,11 +46,11 @@ class RandomProxyMiddleware(object):
         return cls(crawler.settings)
 
     def process_request(self, request, spider):
-        name = '%s:bannedproxy' % spider.name
+        name = '%s:proxystatus' % spider.name
         while True:
             new_proxy = IPProxyUtil.get_proxy(self.proxy_pool_url)
-            times = int(self.server.hget(name, new_proxy) or 0)
-            if times >= self.proxy_times_banned_max:
+            score = int(self.server.hget(name, new_proxy) or 0)
+            if score <= -self.proxy_times_banned_max:
                 self.__del_proxy(new_proxy, spider)
             else:
                 request.meta['proxy'] = new_proxy
@@ -58,13 +58,13 @@ class RandomProxyMiddleware(object):
                 break
 
     def process_response(self, request, response, spider):
-        name = '%s:bannedproxy' % spider.name
+        name = '%s:proxystatus' % spider.name
         normal_proxy = request.meta.get('proxy', None)
         if normal_proxy:
-            times = int(self.server.hget(name, normal_proxy) or 0)
-            # 如果正常处理请求，则为代理减掉一次失败次数
-            if times > -5:
-                self.server.hset(name, normal_proxy, times - 1)
+            score = int(self.server.hget(name, normal_proxy) or 0)
+            # 如果正常处理请求，则为代理加1分
+            if score < self.proxy_times_banned_max:
+                self.server.hset(name, normal_proxy, score + 1)
         return response
 
     def process_exception(self, request, exception, spider):
@@ -72,18 +72,18 @@ class RandomProxyMiddleware(object):
                                ConnectionRefusedError, ConnectionDone, ConnectError,
                                ConnectionLost, TCPTimedOutError, ResponseFailed,
                                IOError, TunnelError)
-        name = '%s:bannedproxy' % spider.name
+        name = '%s:proxystatus' % spider.name
         if isinstance(exception, exceptions_to_retry) and not request.meta.get('dont_retry', False):
             banned_proxy = request.meta.get('proxy', None)
             if banned_proxy:
                 # hget返回为bytes
-                times = int(self.server.hget(name, banned_proxy) or 0)
-                if times >= self.proxy_times_banned_max:
+                score = int(self.server.hget(name, banned_proxy) or 0)
+                if score <= -self.proxy_times_banned_max:
                     # 不删除redis中失效的代理，如果代理池中再次出现原来已失效的代理可再次过滤
                     # self.server.hdel(name, banned_proxy)
                     self.__del_proxy(banned_proxy, spider)
                 else:
-                    self.server.hset(name, banned_proxy, times + 1)
+                    self.server.hset(name, banned_proxy, score - 1)
 
     def __del_proxy(self, proxy, spider):
         IPProxyUtil.delete_proxy(proxy, self.proxy_pool_url)
