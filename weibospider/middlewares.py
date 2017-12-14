@@ -45,14 +45,19 @@ class RandomProxyMiddleware(object):
                 # hget返回为bytes
                 times = int(self.server.hget(name, banned_proxy) or 0)
                 if times >= self.proxy_times_banned_max:
-                    self.server.hdel(name, banned_proxy)
+                    # 不删除redis中失效的代理，如果代理池中再次出现原来已失效的代理可再次过滤
+                    # self.server.hdel(name, banned_proxy)
                     IPProxyUtil.delete_proxy(banned_proxy, self.proxy_pool_url)
                     spider.log('删除失效代理: %s' % banned_proxy)
                 else:
                     self.server.hset(name, banned_proxy, times + 1)
-        proxy = IPProxyUtil.get_proxy(self.proxy_pool_url)
-        request.meta['proxy'] = proxy
-        spider.log('proxy: %s' % proxy)
+        while True:
+            proxy = IPProxyUtil.get_proxy(self.proxy_pool_url)
+            times = int(self.server.hget(name, proxy) or 0)
+            if times < self.proxy_times_banned_max:
+                request.meta['proxy'] = proxy
+                spider.log('proxy: %s' % proxy)
+                break
 
 
 class WeiboSpiderMiddleware(object):
