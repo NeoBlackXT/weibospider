@@ -62,6 +62,7 @@ DOWNLOADER_MIDDLEWARES = {
     'weibospider.middlewares.RandomProxyMiddleware': 755,
 }
 
+
 # Enable or disable extensions
 # See http://scrapy.readthedocs.org/en/latest/topics/extensions.html
 # EXTENSIONS = {
@@ -100,7 +101,7 @@ AUTOTHROTTLE_DEBUG = False
 CRAWLSPIDER_FOLLOW_LINKS = False
 
 # 设置下载超时（默认180.0秒）
-DOWNLOAD_TIMEOUT = 10
+DOWNLOAD_TIMEOUT = 60
 
 USER_AGENT_POOL = [
     'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.8) Gecko Fedora/1.9.0.8-1.fc10 Kazehakase/0.5.6',
@@ -135,7 +136,7 @@ USER_AGENT_POOL = [
 # 代理池URL(默认为http://127.0.0.1:5010)
 PROXY_POOL_URL = 'http://192.168.145.128:5010'
 # 代理允许的请求失败次数最大值(默认5次)
-PROXY_TIMES_BANNED_MAX = 3
+PROXY_TIMES_BANNED_MAX = 5
 
 DUPEFILTER_CLASS = "weibospider.bloom_filter.RFPDupeFilter"
 DUPEFILTER_DEBUG = True

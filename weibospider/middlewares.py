@@ -6,8 +6,8 @@ import random
 
 from twisted.internet import defer
 from twisted.internet.error import TimeoutError, DNSLookupError, \
-        ConnectionRefusedError, ConnectionDone, ConnectError, \
-        ConnectionLost, TCPTimedOutError
+    ConnectionRefusedError, ConnectionDone, ConnectError, \
+    ConnectionLost, TCPTimedOutError
 from twisted.web.client import ResponseFailed
 
 from scrapy import signals
@@ -29,7 +29,7 @@ class RandomUserAgentMiddleware(object):
     def process_request(self, request, spider):
         ua = random.choice(self.ualist)
         request.headers.setdefault(b'User-Agent', ua)
-        spider.log('User-Agent: %s' % ua)
+        spider.log('User-Agent: %s\nURL: %s' % (ua, request.url))
 
 
 class RandomProxyMiddleware(object):
@@ -54,7 +54,7 @@ class RandomProxyMiddleware(object):
                 self.__del_proxy(new_proxy, spider)
             else:
                 request.meta['proxy'] = new_proxy
-                spider.log('proxy: %s' % new_proxy)
+                spider.log('proxy: %s\nURL: %s' % (new_proxy, request.url))
                 break
 
     def process_response(self, request, response, spider):
