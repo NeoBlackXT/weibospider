@@ -54,7 +54,6 @@ class PreProc(object):
             cv.polylines(new, hull, 1, (0, 255, 0))
             cv.imshow('image', new)
             cv.waitKey(0)
-
             return grayimg
 
 
