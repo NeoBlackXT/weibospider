@@ -16,7 +16,7 @@ class WeiboPipeline(object):
     def process_item(self, item, spider):
         connection = pymysql.connect(host='localhost', user='root', password='root', db='weibo', charset='utf8mb4',
                                      cursorclass=pymysql.cursors.DictCursor)
-        try:
+        with connection:
             with connection.cursor() as cursor:
                 spider.logger.info('Item type: %s' % type(item))
                 if isinstance(item, WeiboItem):
@@ -33,12 +33,4 @@ class WeiboPipeline(object):
                         item['nickname'], item['gender'], item['is_vip'], item['verified'], item['introduction'],
                         item['level'],
                         item['concern_num'], item['fans_num'], item['weibo_num'], item['home_url']))
-                connection.commit()
-        except IntegrityError:
-            # 主键重复
-            pass
-        except:
-            traceback.print_exc()
-        finally:
-                connection.close()
         return item
