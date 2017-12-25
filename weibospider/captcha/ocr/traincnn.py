@@ -110,20 +110,20 @@ class PreProcImg(object):
                     gray_img[np] = gray_img[np[0] + 1, np[1]] = 0
                 # 修复正斜向双间隔噪点
                 # if np[1]-1>=0 and np[1]+2<x:
-                #     if (np[0]+1,np[1]+1) in noise and newimg[np[0]-1,np[1]-1]==newimg[np[0]+2,np[1]+2]==0:
-                #         newimg[np]=newimg[np[0]+1,np[1]+1]=0
+                #     if (np[0]+1,np[1]+1) in noise and gray_img[np[0]-1,np[1]-1]==gray_img[np[0]+2,np[1]+2]==0:
+                #         gray_img[np]=gray_img[np[0]+1,np[1]+1]=0
                 # 修复反斜向双间隔噪点
                 # if np[1]-2>=0 and np[1]+1<x:
-                #     if (np[0]+1,np[1]-1) in noise and newimg[np[0]-1,np[1]+1]==newimg[np[0]+2,np[1]-2]==0:
-                #         newimg[np]=newimg[np[0]+1,np[1]-1]=0
+                #     if (np[0]+1,np[1]-1) in noise and gray_img[np[0]-1,np[1]+1]==gray_img[np[0]+2,np[1]-2]==0:
+                #         gray_img[np]=gray_img[np[0]+1,np[1]-1]=0
             if np[0] - 1 >= 0 and np[0] + 1 < height:
                 # 修复垂直方向单间隔噪点
                 if gray_img[np[0] - 1, np[1]] == gray_img[np[0] + 1, np[1]] == 0:
                     gray_img[np] = 0
                 # 修复斜向单间隔噪点
                 # if np[1]-1>=0 and np[1]+1<x:
-                #     if newimg[np[0]-1,np[1]-1]==newimg[np[0]+1,np[1]+1]==0 or newimg[np[0]-1,np[1]+1]==newimg[np[0]+1,np[1]-1]==0:
-                #         newimg[np]=0
+                #     if gray_img[np[0]-1,np[1]-1]==gray_img[np[0]+1,np[1]+1]==0 or gray_img[np[0]-1,np[1]+1]==gray_img[np[0]+1,np[1]-1]==0:
+                #         gray_img[np]=0
 
     def skeletonize(self, threshold=0):
         gray_img = self.gray_img
