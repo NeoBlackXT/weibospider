@@ -56,6 +56,7 @@ class PreProcImg(object):
         return noise
 
     def division(self, threshold, minsize, maxsize, bgcolor=255, findslant=False):
+        """把颜色大于等于阈值的相连的点组成区域，并去除不满足面积大小限制的区域"""
         height = self.height
         width = self.width
         gray_img = self.gray_img
@@ -102,31 +103,38 @@ class PreProcImg(object):
                 arealist.remove(a)
         return arealist
 
-    def fixup(self, noise):
+    def fix_noise(self, noise_point):
+        """去除图像中的噪点"""
+        for _np in noise_point:
+            self.gray_img[_np] = 255
+
+    def fix_crack(self, noise_point):
+        """修复去除噪点后留下的缝隙"""
         gray_img = self.gray_img
         height = self.height
         width = self.width
-        for np in noise:
-            if np[0] - 1 >= 0 and np[0] + 2 < height:
+        for _np in noise_point:
+            if _np[0] - 1 >= 0 and _np[0] + 2 < height:
                 # 修复垂直方向双间隔噪点
-                if (np[0] + 1, np[1]) in noise and gray_img[np[0] - 1, np[1]] == gray_img[np[0] + 2, np[1]] == 0:
-                    gray_img[np] = gray_img[np[0] + 1, np[1]] = 0
+                if (_np[0] + 1, _np[1]) in noise_point and gray_img[_np[0] - 1, _np[1]] == gray_img[
+                    _np[0] + 2, _np[1]] == 0:
+                    gray_img[_np] = gray_img[_np[0] + 1, _np[1]] = 0
                 # 修复正斜向双间隔噪点
-                # if np[1]-1>=0 and np[1]+2<x:
-                #     if (np[0]+1,np[1]+1) in noise and gray_img[np[0]-1,np[1]-1]==gray_img[np[0]+2,np[1]+2]==0:
-                #         gray_img[np]=gray_img[np[0]+1,np[1]+1]=0
+                # if _np[1]-1>=0 and _np[1]+2<x:
+                #     if (_np[0]+1,_np[1]+1) in noise and gray_img[_np[0]-1,_np[1]-1]==gray_img[_np[0]+2,_np[1]+2]==0:
+                #         gray_img[_np]=gray_img[_np[0]+1,_np[1]+1]=0
                 # 修复反斜向双间隔噪点
-                # if np[1]-2>=0 and np[1]+1<x:
-                #     if (np[0]+1,np[1]-1) in noise and gray_img[np[0]-1,np[1]+1]==gray_img[np[0]+2,np[1]-2]==0:
-                #         gray_img[np]=gray_img[np[0]+1,np[1]-1]=0
-            if np[0] - 1 >= 0 and np[0] + 1 < height:
+                # if _np[1]-2>=0 and _np[1]+1<x:
+                #     if (_np[0]+1,_np[1]-1) in noise and gray_img[_np[0]-1,_np[1]+1]==gray_img[_np[0]+2,_np[1]-2]==0:
+                #         gray_img[_np]=gray_img[_np[0]+1,_np[1]-1]=0
+            if _np[0] - 1 >= 0 and _np[0] + 1 < height:
                 # 修复垂直方向单间隔噪点
-                if gray_img[np[0] - 1, np[1]] == gray_img[np[0] + 1, np[1]] == 0:
-                    gray_img[np] = 0
+                if gray_img[_np[0] - 1, _np[1]] == gray_img[_np[0] + 1, _np[1]] == 0:
+                    gray_img[_np] = 0
                 # 修复斜向单间隔噪点
-                # if np[1]-1>=0 and np[1]+1<x:
-                #     if gray_img[np[0]-1,np[1]-1]==gray_img[np[0]+1,np[1]+1]==0 or gray_img[np[0]-1,np[1]+1]==gray_img[np[0]+1,np[1]-1]==0:
-                #         gray_img[np]=0
+                # if _np[1]-1>=0 and _np[1]+1<x:
+                #     if gray_img[_np[0]-1,_np[1]-1]==gray_img[_np[0]+1,_np[1]+1]==0 or gray_img[_np[0]-1,_np[1]+1]==gray_img[_np[0]+1,_np[1]-1]==0:
+                #         gray_img[_np]=0
 
     def skeletonize(self, threshold=0):
         gray_img = self.gray_img
@@ -170,15 +178,17 @@ class PreProcImg(object):
                     file = file_list[cnt]
                     cnt += 1
                     img = PreProcImg(path + file)
-                    ns = img.find_noise()
-                    img.division(200, 0, 150)
-                    img.fixup(ns)
-                    img.gray_img = img.gray_img / 255
+                    _np = img.find_noise()
+                    img.gray_img=cv.threshold(img.gray_img,200,255,cv.THRESH_BINARY)[1]
+                    img.fix_noise(_np)
+                    img.fix_crack(_np)
+                    img.gray_img = img.gray_img // 255
                     capt = file[:-4]
-                    x[i] = img.gray_img.reshape(height, width, 1)
+                    x[i] = np.resize(img.gray_img, (height, width, 1))
                     for k in range(len_captcha):
                         y[k][i][img.charset.find(capt[k])] = 1
                 yield x, y
+            raise RuntimeError('Sample Not Enough')
 
 
 class TrainCnn(object):
@@ -207,11 +217,16 @@ class TrainCnn(object):
 
     def train_model(self, gen_train, gen_valid):
         # x,y =next(gen_train)
-        self.model.fit_generator(gen_train, steps_per_epoch=25,epochs=1,validation_data=gen_valid, validation_steps=1,workers=1)
+        self.model.fit_generator(gen_train, steps_per_epoch=25, epochs=2, validation_data=gen_valid, validation_steps=1,
+                                 workers=1)
         self.model.save('model.h5')
 
 
-if __name__ == '__main__':
+def main():
     gen_train = PreProcImg.gen_batch('D:\marked_train')
     gen_valid = PreProcImg.gen_batch('D:\marked_valid')
     TrainCnn().train_model(gen_train, gen_valid)
+
+
+if __name__ == '__main__':
+    main()

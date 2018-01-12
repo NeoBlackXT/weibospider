@@ -17,4 +17,3 @@ class CaptchaSpider(Spider):
         path = 'D:\\captcha\\'
         with open('{}{:04}.png'.format(path, order), 'wb') as f:
             f.write(response.body)
-            f.close()

@@ -17,7 +17,7 @@ class WeiboPipeline(object):
     def process_item(self, item, spider):
         connection = pymysql.connect(host='localhost', user='root', password='root', db='weibo', charset='utf8mb4',
                                      cursorclass=pymysql.cursors.DictCursor)
-        with closing(connection), connection as conn, conn.cursor() as cursor:
+        with closing(connection) as cursor:
             spider.logger.info('Item type: %s' % type(item))
             if isinstance(item, WeiboItem):
                 sql = "INSERT INTO `T_WEIBO` (`mid`,`nickname`,`date`,`content`,`source_url`,`image_urls`,`video_url`,`forwarding_num`,`comment_num`,`praise_num`) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
