@@ -64,7 +64,7 @@ class TrainCnn(object):
                     cnt += 1
                     img = PreProcImg(path + file)
                     _np = img.find_noise()
-                    img.gray_img = cv.threshold(img.gray_img, 200, 255, cv.THRESH_BINARY)[1]
+                    img.threshold(200)
                     img.fix_noise(_np)
                     img.fix_crack(_np)
                     img.gray_img = img.gray_img // 255

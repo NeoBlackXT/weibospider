@@ -131,6 +131,9 @@ class PreProcImg(object):
                 #     if gray_img[_np[0]-1,_np[1]-1]==gray_img[_np[0]+1,_np[1]+1]==0 or gray_img[_np[0]-1,_np[1]+1]==gray_img[_np[0]+1,_np[1]-1]==0:
                 #         gray_img[_np]=0
 
+    def threshold(self, threshold, maxval=255):
+        self.gray_img = cv.threshold(self.gray_img, threshold, maxval, cv.THRESH_BINARY)[1]
+
     def skeletonize(self, threshold=0):
         gray_img = self.gray_img
         bin_img = 1 - cv.threshold(gray_img, threshold, 1, cv.THRESH_BINARY)[1]

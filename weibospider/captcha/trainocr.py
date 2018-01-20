@@ -86,7 +86,7 @@ def trans_img():
     for file_name in os.listdir(INPUT_PATH):
         ppimg = PreProcImg(os.path.join(INPUT_PATH, file_name))
         _np = ppimg.find_noise()
-        ppimg.gray_img = cv.threshold(ppimg.gray_img, 200, 255, cv.THRESH_BINARY)[1]
+        ppimg.threshold(200)
         ppimg.fix_noise(_np)
         ppimg.fix_crack(_np)
         cv.imwrite(os.path.join(OUTPUT_PATH, file_name), ppimg.gray_img)
