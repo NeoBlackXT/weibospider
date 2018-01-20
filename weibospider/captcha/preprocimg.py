@@ -6,7 +6,7 @@ from weibospider.utils import TailRecursion
 LEN_CAPTCHA = 5
 HEIGHT = 40
 WIDTH = 100
-CHARSET = '23456789ABCDEFGHKLMNPQRSUVWXYZabcdefhkmnopqrsuvwxyz'
+CHARSET = '23456789ABCDEFGHKMNPQRSUVWXYZabcdefhkmnpqrsuvwxyz'
 
 
 class PreProcImg(object):
