@@ -11,11 +11,11 @@ from weibospider.captcha.preprocimg import PreProcImg
 pytesseract.pytesseract.tesseract_cmd = 'D:\\Dev\\Tesseract-OCR\\tesseract'
 
 # 输入原始图像
-INPUT_PATH = r'D:\marked_train'
+INPUT_PATH = r'D:\marked_valid2'
 # 输出二值图像
-OUTPUT_PATH = r'D:\output_valid'
+OUTPUT_PATH = r'D:\output_valid2'
 # 合并为TIFF图像
-TIFF_PATH = r'D:\tiff'
+TIFF_PATH = r'D:\tiff2'
 # 每个TIFF图像的页数
 BATCH_SIZE = 32
 

@@ -8,7 +8,7 @@ from weibospider.captcha.preprocimg import PreProcImg
 
 __all__ = ['recognize']
 pytesseract.pytesseract.tesseract_cmd = 'D:\\Dev\\Tesseract-OCR\\tesseract'
-LANG = 'sina'
+LANG = 'model'
 
 
 def recognize(imgfile):
@@ -23,7 +23,7 @@ def recognize(imgfile):
 
 
 def main():
-    path = r'D:\marked_valid'
+    path = r'D:\marked_valid2'
     import os
     files = os.listdir(path)
     n = len(files)
@@ -31,9 +31,10 @@ def main():
     for file in files:
         ocr = recognize(os.path.join(path, file))
         truth = os.path.splitext(file)[0]
-        print('{},{}'.format(ocr, truth))
         if ocr.lower() == truth.lower():
             cnt += 1
+        else:
+            print('{},{}'.format(ocr, truth))
     print('正确率：{}'.format(cnt / n))
 
 

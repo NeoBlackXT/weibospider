@@ -5,12 +5,13 @@ import re
 import base64
 import binascii
 import rsa
-from weibospider.spiders.unloginspider import UnloginCrawl
 from urllib import request
 from urllib import parse
-
 import time
 import traceback
+
+from weibospider.captcha.ocrrecog import recognize
+from weibospider.utils import JsonUtil
 
 """
 在spiders目录中添加users.txt文件，内容格式为：
@@ -61,7 +62,7 @@ class PostLogin(object):
         try:
             urlopen = request.urlopen(prelogin_request)
             if urlopen.getcode() == 200:
-                prelogin_dict = UnloginCrawl.jsonp_to_dict(urlopen.read().decode())
+                prelogin_dict = JsonUtil.jsonp_to_dict(urlopen.read().decode())
                 print(prelogin_dict)
                 return prelogin_dict
             else:
@@ -119,11 +120,10 @@ class PostLogin(object):
                     sp = self.__rsa2_encode_pw(prelogin_dict['pubkey'], prelogin_dict['servertime'], prelogin_dict['nonce'],
                                                self.users[user])
                     yield self.__login(prelogin_dict, prelt, sp, su, url)
-                    break
             except:
                 traceback.print_exc()
 
-    def __login(self, prelogin_dict, prelt, sp, su, url, cookies =None, door=None):
+    def __login(self, prelogin_dict, prelt, sp, su, url, cookies=None, door=None):
         headers = {
             'Connection': 'keep-alive',
             'Pragma': 'no-cache',
@@ -196,11 +196,8 @@ class PostLogin(object):
                 if door_resp.getcode() == 200:
                     cookies_str = door_resp.getheader('Set-Cookie')
                     png = door_resp.read()
-                    with open('d:/door.png', 'wb') as f:
-                        f.write(png)
-                        f.close()
+                    door = recognize(png)
                     _cookies = self.__process_cookies_str(cookies_str)
-                    door = input(rtn_dict['reason'] + "\n")
                     return self.__login(prelogin_dict, prelt, sp, su, url, _cookies, door)
             else:
                 raise RuntimeError('未知错误，返回消息为： %s' % rtn_dict)
