@@ -73,8 +73,12 @@ DOWNLOADER_MIDDLEWARES = {
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
     # 'scrapy_redis.pipelines.RedisPipeline': 300,
-    'weibospider.pipelines.WeiboPipeline': 310,
+    'weibospider.pipelines.WeiboPipelineSQLAlchemyCore': 310,
 }
+
+# 数据库连接URL
+# mysql+pymysql://<username>:<password>@<host>/<dbname>[?<options>]
+DB_URL = 'mysql+pymysql://root:rootroot@localhost/weibo?charset=utf8mb4'
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See http://doc.scrapy.org/en/latest/topics/autothrottle.html
