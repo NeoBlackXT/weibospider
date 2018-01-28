@@ -1,4 +1,4 @@
-Kera==2.1.2
+Keras==2.1.2
 Pillow==5.0.0
 PyMySQL==0.8.0
 SQLAlchemy==1.2.2
